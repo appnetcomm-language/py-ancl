@@ -20,9 +20,9 @@ models:
           - { name: "testService" }
         egress: []
 connections:
-  - { "ingress": "prod::testModel1::testComponent12::testAbstractService",
-      "with":    "shared::testModel2::testComponent12::testService"
-    }
+  - ingress: "prod::testModel1::testComponent12::testAbstractService"
+    with:
+      - "shared::testModel2::testComponent12::testService"
 nodes:
   - { name: "192.0.2.1/32", alias: "testNode1", roles: [ "foo::testModel1::testComponent11" ] }
   - { name: "192.0.2.2/32", alias: "testNode2", roles: [ "foo::testModel2::testComponent22" ] }

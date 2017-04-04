@@ -20,16 +20,18 @@ class Connection(object):
             if type(raw["ingress"]) != type(""): return "Connection invalid form - ingress not str: %s"%(raw["ingress"])
             if re_ingress.match(raw["ingress"]) is None:
                 return "Connection invalid form - ingress not correct format: %s"%(raw["ingress"])
-            if type(raw["with"]) != type(""): return "Connection invalid form - with not str: %s"%(raw["with"])
-            if re_ingress.match(raw["with"]) is None:
-                return "Connection invalid form - with not correct format: %s"%(raw["with"])
+            if type(raw["with"]) != type([]): return "Connection invalid form - with not str: %s"%(raw["with"])
+            for w in raw["with"]:
+                if re_ingress.match(w) is None:
+                    return "Connection invalid form - with not correct format: %s"%(w)
         else: #egress
             if type(raw["egress"]) != type(""): return "Connection invalid form - egress not str: %s"%(raw)
             if re_egress.match(raw["egress"]) is None:
                 return "Connection invalid form - egress not correct format: %s"%(raw)
-            if type(raw["with"]) != type(""): return "Connection invalid form - with not str: %s"%(raw["with"])
-            if re_egress.match(raw["with"]) is None:
-                return "Connection invalid form - with not correct format: %s"%(raw["with"])
+            if type(raw["with"]) != type([]): return "Connection invalid form - with not str: %s"%(raw["with"])
+            for w in raw["with"]:
+                if re_egress.match(w) is None:
+                    return "Connection invalid form - with not correct format: %s"%(w)
 
     def __convert_from_dict(self, raw):
         if raw.has_key("ingress"): #ingress
@@ -45,10 +47,10 @@ class Connection(object):
         try:
             c = Connection.check_syntax(raw)
             if c is not None:
-                raise ConnectionSyntaxError(e)
+                raise ConnectionSyntaxError(c)
             self.__convert_from_dict(raw)
         except StandardError, e:
-            raise ConnectionHandlingError(e)
+            raise ConnectionHandlingError()
 
     @property
     def direction(self):
