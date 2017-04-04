@@ -4,3 +4,4 @@ from component import *
 from model import *
 from connection import *
 from node import *
+from engine import *

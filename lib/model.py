@@ -2,6 +2,7 @@ from component import *
 
 class ModelSyntaxError(Exception): pass
 class ModelHandlingError(Exception): pass
+class ModelMergeError(Exception): pass
 
 class Model(object):
 
@@ -58,3 +59,6 @@ class Model(object):
         if c is None: return None
         if c.egress(dname) is None: return None
         return c.egress(dname)
+
+    def merge(self, other):
+        raise ModelMergeError("not implemented")

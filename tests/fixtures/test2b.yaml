@@ -1,0 +1,6 @@
+models:
+  - name: testModel
+    components:
+      - name: testComponent2
+        ingress: []
+        egress: []

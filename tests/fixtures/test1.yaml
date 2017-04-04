@@ -1,0 +1,28 @@
+models:
+  - name: testModel1
+    components:
+      - name: testComponent11
+        ingress: []
+        egress:
+          - { name: "testComponent12::testAbstractService" }
+      - name: testComponent12
+        ingress:
+          - { name: "testAbstractService" }
+        egress: []
+  - name: testModel2
+    components:
+      - name: testComponent21
+        ingress: []
+        egress:
+          - { name: "testComponent22::testService" }
+      - name: testComponent22
+        ingress:
+          - { name: "testService" }
+        egress: []
+connections:
+  - { "ingress": "prod::testModel1::testComponent12::testAbstractService",
+      "with":    "shared::testModel2::testComponent12::testService"
+    }
+nodes:
+  - { name: "192.0.2.1/32", alias: "testNode1", roles: [ "foo::testModel1::testComponent11" ] }
+  - { name: "192.0.2.2/32", alias: "testNode2", roles: [ "foo::testModel2::testComponent22" ] }
