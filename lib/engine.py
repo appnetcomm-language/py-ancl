@@ -70,3 +70,8 @@ class Engine(object):
                         raise NodeAlreadyExistsError()
                     else:
                         self._nodes[na.name] = n
+
+    def validate(self):
+        # ensure that the sum of this environment is valid according to the
+        # requires of the spec
+        pass
