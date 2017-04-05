@@ -79,6 +79,13 @@ class Role(object):
         if not self._ingress.has_key(ingressname): return None
         return self._ingress[ingressname]
 
+    def find_ingress_by_port(self, port, protocol):
+        for iname, i in self._ingress.items():
+            for portrange in i["ports"]:
+                if protocol == portrange[2] and port >= portrange[0] and port <= portrange[1]:
+                    return "%s::%s"%(self._name, iname)
+        return None
+
     @property
     def egresses(self):
         return self._egress
