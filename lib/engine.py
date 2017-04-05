@@ -2,9 +2,14 @@ import yaml
 from model import *
 from connection import *
 from node import *
+from role import *
+import copy
 
 class ConnectionAlreadyExistsError(Exception): pass
 class NodeAlreadyExistsError(Exception): pass
+
+class EngineRenderError(Exception): pass
+class MissingModelRenderError(EngineRenderError): pass
 
 class Engine(object):
 
@@ -12,6 +17,7 @@ class Engine(object):
         self._models = {}
         self._connections = []
         self._nodes  = {}
+        self._roles  = {}
 
     @property
     def num_models(self):
@@ -69,9 +75,60 @@ class Engine(object):
                     if self._nodes.has_key(na.name):
                         raise NodeAlreadyExistsError()
                     else:
-                        self._nodes[na.name] = n
+                        self._nodes[na.name] = na
 
     def validate(self):
         # ensure that the sum of this environment is valid according to the
         # requires of the spec
         pass
+
+    def _render_role(self, rolename):
+        r = Role(rolename)
+        m = self.model(r.modelname)
+        if m is None: raise MissingModelRenderError()
+        c = m.component(r.componentname)
+        if c is None: raise MissingModelRenderError()
+        r.associate_component(m,c)
+        for iname in c.list_ingress():
+            r.add_ingress(c.ingress(iname))
+        for ename in c.list_egress():
+            r.add_egress(c.egress(ename))
+        self._roles[rolename] = r
+
+    def _render_connection(self, c):
+            if c.direction == "ingress":
+                # "ingress" replacement
+                # Foreach role, see if that are any egresses which have this connection
+                # referenced and hence need to be substituted
+                dcontext, dmodel, dcomponent, dservice = c.src.split("::")
+                i = "%s::%s::%s"%(dcontext, dmodel, dcomponent)
+                for rn, ro in self._roles.items():
+                    if [i,dservice] in ro.egresses:
+                        ro.replace_egress([i,dservice], c.dst)
+            else: # egress
+                # "egress" replacement
+                # very targetted so only need to look at a specific role to update
+                dcontext, dmodel, dcomponent, ddepcomponent, ddepservice = c.src.split("::")
+                r = "%s::%s::%s"%(dcontext, dmodel, dcomponent)
+                i = "%s::%s::%s"%(dcontext, dmodel, ddepcomponent)
+                to_egresses = []
+                for to_egress in c.dst:
+                    toe_context, toe_model, _, toe_component, toe_service = to_egress.split("::")
+                    to_egresses.append("%s::%s::%s::%s"%(toe_context, toe_model, toe_component, toe_service))
+                self._roles[r].replace_egress([i, ddepservice], to_egresses)
+
+    def render(self):
+        # Iterate through all contexts
+        contexts = {}
+        # Extract the roles from all nodes and copy from the original models
+        for nn, no in self._nodes.items():
+            for r in no.roles:
+                if not self._roles.has_key(r):
+                    self._render_role(r)
+        for c in self._connections:
+            self._render_connection(c)
+
+    def role(self, rolename):
+        if self._roles.has_key(rolename):
+            return self._roles[rolename]
+        return None
