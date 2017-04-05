@@ -23,8 +23,9 @@ class EngineFileTest(unittest.TestCase):
         e.add_directory("tests/fixtures/engine_test_directory")
         self.assertEqual(e.num_models, 2)
         self.assertEqual(len(e.model("testModelB").list_components()), 2)
-        self.assertEqual(e.num_nodes, 2)
+        self.assertEqual(e.num_nodes, 3)
         self.assertEqual(e.node("192.0.2.1/32").name, "192.0.2.1/32")
+        self.assertIn("subdir::testModelA1::testComponentA11", e.node("192.0.2.50/32").roles)
 
     def test_render(self):
         e = ancl.Engine()

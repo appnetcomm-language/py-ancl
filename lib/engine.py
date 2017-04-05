@@ -4,7 +4,7 @@ from connection import *
 from node import *
 from role import *
 import copy
-import glob
+import os
 
 class ConnectionAlreadyExistsError(Exception): pass
 class NodeAlreadyExistsError(Exception): pass
@@ -79,8 +79,15 @@ class Engine(object):
                         self._nodes[na.name] = na
 
     def add_directory(self, dirname):
-        for f in glob.glob("%s/*.yaml"%(dirname)):
-            self.add_file(f)
+        for f in os.listdir(dirname):
+            fname = "%s/%s"%(dirname,f)
+            if f[0] == ".": continue # Catchs this dir, parent dir, dotfiles
+            if os.path.isfile(fname):
+                if f[-5:] != ".yaml": continue
+                self.add_file(fname)
+            elif os.path.isdir(fname):
+                self.add_directory(fname)
+            # else skip it
 
     def validate(self):
         # ensure that the sum of this environment is valid according to the

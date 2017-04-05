@@ -1,0 +1,2 @@
+nodes:
+  - { name: "192.0.2.50/32", roles: [ "subdir::testModelA1::testComponentA11" ] }
