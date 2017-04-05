@@ -74,7 +74,7 @@ class Engine(object):
                 for n in d["nodes"]:
                     na = Node(n)
                     if self._nodes.has_key(na.name):
-                        raise NodeAlreadyExistsError()
+                        raise NodeAlreadyExistsError(na.name)
                     else:
                         self._nodes[na.name] = na
 

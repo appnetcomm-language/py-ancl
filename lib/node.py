@@ -26,7 +26,7 @@ class Node(object):
         try:
             c = Node.check_syntax(raw)
             if c is not None:
-                raise NodeSyntaxError(e)
+                raise NodeSyntaxError(c)
             self.__convert_from_dict(raw)
         except StandardError, e:
             raise NodeHandlingError(e)
