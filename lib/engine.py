@@ -5,6 +5,7 @@ from node import *
 from role import *
 import copy
 import os
+import ipaddress
 
 class ConnectionAlreadyExistsError(Exception): pass
 class NodeAlreadyExistsError(Exception): pass
@@ -49,6 +50,8 @@ class Engine(object):
         return len(self._nodes.keys())
 
     def node(self, nodename):
+        if type(nodename) == type(""):
+            nodename = ipaddress.ip_network(nodename)
         if self._nodes.has_key(nodename):
             return self._nodes[nodename]
         return None
@@ -73,10 +76,11 @@ class Engine(object):
             if d.has_key("nodes"):
                 for n in d["nodes"]:
                     na = Node(n)
-                    if self._nodes.has_key(na.name):
+                    naip = ipaddress.ip_network(na.name)
+                    if self._nodes.has_key(naip):
                         raise NodeAlreadyExistsError(na.name)
                     else:
-                        self._nodes[na.name] = na
+                        self._nodes[naip] = na
 
     def add_directory(self, dirname):
         for f in os.listdir(dirname):
