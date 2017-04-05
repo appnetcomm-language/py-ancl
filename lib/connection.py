@@ -1,7 +1,7 @@
 import re
 
-re_ingress = re.compile("^(?P<context>\w+)::(?P<model>\w+)::(?P<component>\w+)::(?P<service>\w+)$", re.IGNORECASE)
-re_egress  = re.compile("^(?P<context>\w+)::(?P<model>\w+)::(?P<component>\w+)::(?P<dep>\w+)::(?P<service>\w+)$", re.IGNORECASE)
+re_ingress = re.compile("^(?P<context>[\w-]+)::(?P<model>\w+)::(?P<component>\w+)::(?P<service>\w+)$", re.IGNORECASE)
+re_egress  = re.compile("^(?P<context>[\w-]+)::(?P<model>\w+)::(?P<component>\w+)::(?P<dep>\w+)::(?P<service>\w+)$", re.IGNORECASE)
 
 class ConnectionSyntaxError(Exception): pass
 class ConnectionHandlingError(Exception): pass

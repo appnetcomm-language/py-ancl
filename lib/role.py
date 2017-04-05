@@ -1,6 +1,6 @@
 import re
 
-re_rolename = re.compile("^(?P<context>\w+)::(?P<model>\w+)::(?P<component>\w+)$", re.IGNORECASE)
+re_rolename = re.compile("^(?P<context>[\w-]+)::(?P<model>[\w-]+)::(?P<component>[\w-]+)$", re.IGNORECASE)
 
 class InvalidRoleNameError(Exception): pass
 class InvalidRoleReplaceError(Exception): pass

@@ -1,6 +1,6 @@
 import re
 
-re_modeldep = re.compile("^(\w)+::(\w)+$", re.IGNORECASE)
+re_modeldep = re.compile("^([\w-])+::([\w-])+$", re.IGNORECASE)
 
 class DependencySyntaxError(Exception): pass
 class DependencyHandlingError(Exception): pass
