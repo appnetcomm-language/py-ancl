@@ -18,8 +18,13 @@ class EngineFileTest(unittest.TestCase):
             e.add_file("tests/fixtures/test2a.yaml")
             e.add_file("tests/fixtures/test2b.yaml")
 
-    def test_dir(self):
-        pass
+    def test_directory(self):
+        e = ancl.Engine()
+        e.add_directory("tests/fixtures/engine_test_directory")
+        self.assertEqual(e.num_models, 2)
+        self.assertEqual(len(e.model("testModelB").list_components()), 2)
+        self.assertEqual(e.num_nodes, 2)
+        self.assertEqual(e.node("192.0.2.1/32").name, "192.0.2.1/32")
 
     def test_render(self):
         e = ancl.Engine()

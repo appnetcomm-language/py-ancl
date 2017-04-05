@@ -1,0 +1,11 @@
+models:
+  - name: "testModelA1"
+    components:
+      - name: "testComponentA11"
+        ingress: []
+        egress: []
+      - name: "testComponentA12"
+        ingress: []
+        egress: []
+nodes:
+  - { name: "192.0.2.1/32", alias: "testA1", roles: [ "contA::testModelA1::testComponentA11"] }
