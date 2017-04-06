@@ -21,6 +21,7 @@ class Node(object):
         self._roles = []
         for r in raw["roles"]:
             if r not in self._roles: self._roles.append(r)
+        self._listener_hints = []
 
     def __init__(self, raw):
         try:
@@ -41,3 +42,6 @@ class Node(object):
 
     def has_role(self, rolename):
         return rolename in self._roles
+
+    def add_listener_hint(self, port, protocol):
+        self._listener_hints.append([port,protocol])

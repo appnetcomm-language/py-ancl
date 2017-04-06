@@ -118,9 +118,13 @@ class Engine(object):
                 # referenced and hence need to be substituted
                 dcontext, dmodel, dcomponent, dservice = c.src.split("::")
                 i = "%s::%s::%s"%(dcontext, dmodel, dcomponent)
+                to_egresses = []
+                for to_egress in c.dst:
+                    toe_context, toe_model, toe_component, toe_service = to_egress.split("::")
+                    to_egresses.append(["%s::%s::%s"%(toe_context, toe_model, toe_component), toe_service])
                 for rn, ro in self._roles.items():
                     if [i,dservice] in ro.egresses:
-                        ro.replace_egress([i,dservice], c.dst)
+                        ro.replace_egress([i,dservice],to_egresses)
             else: # egress
                 # "egress" replacement
                 # very targetted so only need to look at a specific role to update
@@ -130,7 +134,7 @@ class Engine(object):
                 to_egresses = []
                 for to_egress in c.dst:
                     toe_context, toe_model, _, toe_component, toe_service = to_egress.split("::")
-                    to_egresses.append("%s::%s::%s::%s"%(toe_context, toe_model, toe_component, toe_service))
+                    to_egresses.append(["%s::%s::%s"%(toe_context, toe_model, toe_component), toe_service])
                 self._roles[r].replace_egress([i, ddepservice], to_egresses)
 
     def render(self):
@@ -147,4 +151,42 @@ class Engine(object):
     def role(self, rolename):
         if self._roles.has_key(rolename):
             return self._roles[rolename]
+        return None
+
+    def add_listener_hint(self, ip, port, protocol):
+        if not self._nodes.has_key(ip): return None
+        self._nodes[ip].add_listener_hint(port, protocol)
+
+    def find_flow(self, localip, localport, foreignip, foreignport, protocol):
+        "find_flow identifies an egress and ingress relationship based on actual network communication"
+        if not self._nodes.has_key(localip): return None
+        lno = self._nodes[localip]
+        if not self._nodes.has_key(foreignip): return None
+        fno = self._nodes[foreignip]
+        if lno is None or fno is None: return None
+        # first step is to identify the listener
+        ingress = None
+        if [localport,protocol] in lno._listener_hints:
+            # if listening, then it's an ingress
+            ingress = None
+            for r in lno.roles:
+                i = self._roles[r].find_ingress_by_port(localport, protocol)
+                if i is not None:
+                    ingress = i
+                    break
+            if ingress is None: return None
+            for r in fno.roles:
+                if self._roles[r].has_egress(ingress):
+                    return [r, ingress]
+        else:
+            ingress = None
+            for r in fno.roles:
+                i = self._roles[r].find_ingress_by_port(foreignport, protocol)
+                if i is not None:
+                    ingress = i
+                    break
+            if ingress is None: return None
+            for r in lno.roles:
+                if self._roles[r].has_egress(ingress):
+                    return [r, ingress]
         return None
