@@ -93,6 +93,6 @@ class Role(object):
     def list_egress(self):
         return self._egress.keys()
 
-    def egress(self, egressname):
-        if not self._egress.has_key(egressname): return None
-        return self._egress[egressname]
+    def has_egress(self, egressname):
+        con, mod, com, ser = egressname.split("::")
+        return ["%s::%s::%s"%(con,mod,com), ser] in self._egress
