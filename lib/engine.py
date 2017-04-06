@@ -87,7 +87,7 @@ class Engine(object):
             fname = "%s/%s"%(dirname,f)
             if f[0] == ".": continue # Catchs this dir, parent dir, dotfiles
             if os.path.isfile(fname):
-                if f[-5:] != ".yaml": continue
+                if f[-5:] != ".ancl": continue
                 self.add_file(fname)
             elif os.path.isdir(fname):
                 self.add_directory(fname)
