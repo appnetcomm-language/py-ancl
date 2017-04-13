@@ -38,5 +38,16 @@ class EngineFileTest(unittest.TestCase):
         self.assertIsNotNone(r3)
         self.assertIn(["shared::testModel2::testComponent22","testService"], r3.egresses)
 
+    def test_render_grouprole(self):
+        e = ancl.Engine()
+        e.add_file("tests/fixtures/engine_test_grouprole.ancl")
+        e.render()
+        self.assertEqual(e.num_groups, 1)
+        rg = e.group("prod::grouprole::groupComponent")
+        self.assertIsNotNone(rg)
+        n = e.node("192.0.2.1/32")
+        self.assertIn("prod::testModel1::testComponent11", n.roles)
+        self.assertIn("prod::testModel2::testComponent21", n.roles)
+
 if __name__ == '__main__':
     unittest.main()

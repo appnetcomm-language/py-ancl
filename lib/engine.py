@@ -1,6 +1,7 @@
 import yaml
 from model import *
 from connection import *
+from grouprole import *
 from node import *
 from role import *
 import copy
@@ -9,15 +10,18 @@ import ipaddress
 
 class ConnectionAlreadyExistsError(Exception): pass
 class NodeAlreadyExistsError(Exception): pass
+class GroupAlreadyExistsError(Exception): pass
 
 class EngineRenderError(Exception): pass
 class MissingModelRenderError(EngineRenderError): pass
+class MissingGroupRoleRenderError(EngineRenderError): pass
 
 class Engine(object):
 
     def __init__(self):
         self._models = {}
         self._connections = []
+        self._groups = {}
         self._nodes  = {}
         self._roles  = {}
 
@@ -43,6 +47,15 @@ class Engine(object):
             for c in self._connections:
                 if c.direction == "egress" and c.src == egress:
                     return c
+        return None
+
+    @property
+    def num_groups(self):
+        return len(self._groups.keys())
+
+    def group(self, groupname):
+        if self._groups.has_key(groupname):
+            return self._groups[groupname]
         return None
 
     @property
@@ -81,6 +94,13 @@ class Engine(object):
                         raise NodeAlreadyExistsError(na.name)
                     else:
                         self._nodes[naip] = na
+            if d.has_key("groups"):
+                for g in d["groups"]:
+                    ga = GroupRole(g)
+                    if self._groups.has_key(ga.name):
+                        raise GroupAlreadyExistsError(ga.name)
+                    else:
+                        self._groups[ga.name] = ga
 
     def add_directory(self, dirname):
         for f in os.listdir(dirname):
@@ -137,16 +157,34 @@ class Engine(object):
                     to_egresses.append(["%s::%s::%s"%(toe_context, toe_model, toe_component), toe_service])
                 self._roles[r].replace_egress([i, ddepservice], to_egresses)
 
+    def _render_grouproles_on_node(self, no):
+        roles_to_remove = set()
+        roles_to_add = set()
+        for r in no.roles:
+            m = re_rolename.match(r)
+            if m.group("model") == "grouprole":
+                roles_to_remove.add(r)
+                for grr in self._groups[r].roles:
+                    roles_to_add.add(grr)
+        for rtr in roles_to_remove:
+            no.roles.remove(rtr)
+        for rta in roles_to_add:
+            no.roles.append(rta)
+
     def render(self):
         # Iterate through all contexts
         contexts = {}
         # Extract the roles from all nodes and copy from the original models
         for nn, no in self._nodes.items():
             for r in no.roles:
-                if not self._roles.has_key(r):
-                    self._render_role(r)
+                m = re_rolename.match(r)
+                if m.group("model") != "grouprole":
+                    if not self._roles.has_key(r):
+                        self._render_role(r)
         for c in self._connections:
             self._render_connection(c)
+        for _, no in self._nodes.items():
+            self._render_grouproles_on_node(no)
 
     def role(self, rolename):
         if self._roles.has_key(rolename):

@@ -1,0 +1,28 @@
+models:
+- name: testModel1
+  components:
+    - name: testComponent11
+      ingress: []
+      egress:
+        - { name: "testComponent12::testAbstractService" }
+    - name: testComponent12
+      ingress:
+        - { name: "testService12", ports: ["123/tcp"] }
+      egress: []
+- name: testModel2
+  components:
+    - name: testComponent21
+      ingress: []
+      egress:
+        - { name: "testComponent22::testService" }
+    - name: testComponent22
+      ingress:
+        - { name: "testService22", ports: ["456/tcp"] }
+      egress: []
+groups:
+- name: prod::grouprole::groupComponent
+  roles:
+  - "prod::testModel1::testComponent11"
+  - "prod::testModel2::testComponent21"
+nodes:
+- { name: "192.0.2.1/32", alias: "testNode1", roles: [ "prod::grouprole::groupComponent" ] }
