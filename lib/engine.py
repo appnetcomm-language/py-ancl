@@ -101,7 +101,7 @@ class Engine(object):
     def _render_role(self, rolename):
         r = Role(rolename)
         m = self.model(r.modelname)
-        if m is None: raise MissingModelRenderError()
+        if m is None: raise MissingModelRenderError(rolename)
         c = m.component(r.componentname)
         if c is None: raise MissingModelRenderError()
         r.associate_component(m,c)
