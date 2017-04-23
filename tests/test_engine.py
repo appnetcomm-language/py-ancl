@@ -31,12 +31,16 @@ class EngineFileTest(unittest.TestCase):
         e = ancl.Engine()
         e.add_file("tests/fixtures/engine_test_render.ancl")
         e.render()
+        # Role Tests
         r1 = e.role("prod::testModel1::testComponent11")
         self.assertIsNotNone(r1)
         self.assertIn(["shared::testModel2::testComponent22","testService"], r1.egresses)
         r3 = e.role("prod::testModel3::testComponent31")
         self.assertIsNotNone(r3)
         self.assertIn(["shared::testModel2::testComponent22","testService"], r3.egresses)
+        # Node Tests
+        self.assertEqual(e.num_rendered_nodes, 3)
+        self.assertIn("shared::testModel2::testComponent22", e.rendered_node("192.0.2.2/32").roles)
 
     def test_render_grouprole(self):
         e = ancl.Engine()
@@ -45,9 +49,33 @@ class EngineFileTest(unittest.TestCase):
         self.assertEqual(e.num_groups, 1)
         rg = e.group("prod::grouprole::groupComponent")
         self.assertIsNotNone(rg)
-        n = e.node("192.0.2.1/32")
-        self.assertIn("prod::testModel1::testComponent11", n.roles)
-        self.assertIn("prod::testModel2::testComponent21", n.roles)
+        rn = e.rendered_node("192.0.2.1/32")
+        self.assertIn("prod::testModel1::testComponent11", rn.roles)
+        self.assertIn("prod::testModel2::testComponent21", rn.roles)
+
+    def test_find_flow(self):
+        e = ancl.Engine()
+        e.add_file("tests/fixtures/engine_test_render.ancl")
+        e.render()
+        e.rendered_node("192.0.2.2/32").add_listener(123,"tcp")
+        # ingress
+        f = e.find_flow(
+            "192.0.2.2/32", 123,
+            "192.0.2.1/32", 32000,
+            "tcp"
+        )
+        self.assertEqual(len(f),1)
+        self.assertEqual("prod::testModel1::testComponent11", f[0][0])
+        self.assertEqual(["shared::testModel2::testComponent22","testService"], f[0][1])
+        # egress
+        f = e.find_flow(
+            "192.0.2.1/32", 32000,
+            "192.0.2.2/32", 123,
+            "tcp"
+        )
+        self.assertEqual(len(f),1)
+        self.assertEqual("prod::testModel1::testComponent11", f[0][0])
+        self.assertEqual(["shared::testModel2::testComponent22","testService"], f[0][1])
 
 if __name__ == '__main__':
     unittest.main()

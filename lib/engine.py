@@ -4,6 +4,7 @@ from connection import *
 from grouprole import *
 from node import *
 from role import *
+from rendered_node import *
 import copy
 import os
 import ipaddress
@@ -24,6 +25,7 @@ class Engine(object):
         self._groups = {}
         self._nodes  = {}
         self._roles  = {}
+        self._rendered_nodes = {}
 
     @property
     def num_models(self):
@@ -67,6 +69,17 @@ class Engine(object):
             nodename = ipaddress.ip_network(nodename)
         if self._nodes.has_key(nodename):
             return self._nodes[nodename]
+        return None
+
+    @property
+    def num_rendered_nodes(self):
+        return len(self._rendered_nodes.keys())
+
+    def rendered_node(self, nodename):
+        if type(nodename) == type(""):
+            nodename = ipaddress.ip_network(nodename)
+        if self._rendered_nodes.has_key(nodename):
+            return self._rendered_nodes[nodename]
         return None
 
     def add_file(self, filename):
@@ -118,6 +131,18 @@ class Engine(object):
         # requires of the spec
         pass
 
+    def _render_roles(self):
+        for nn, no in self._nodes.items():
+            for r in no.roles:
+                m = re_rolename.match(r)
+                if m.group("model") != "grouprole":
+                    if not self._roles.has_key(r):
+                        self._render_role(r)
+        for _, go in self._groups.items():
+            for r in go.roles:
+                if not self._roles.has_key(r):
+                    self._render_role(r)
+
     def _render_role(self, rolename):
         r = Role(rolename)
         m = self.model(r.modelname)
@@ -130,6 +155,10 @@ class Engine(object):
         for ename in c.list_egress():
             r.add_egress(c.egress(ename))
         self._roles[rolename] = r
+
+    def _render_connections(self):
+        for c in self._connections:
+            self._render_connection(c)
 
     def _render_connection(self, c):
             if c.direction == "ingress":
@@ -157,74 +186,42 @@ class Engine(object):
                     to_egresses.append(["%s::%s::%s"%(toe_context, toe_model, toe_component), toe_service])
                 self._roles[r].replace_egress([i, ddepservice], to_egresses)
 
-    def _render_grouproles_on_node(self, no):
-        roles_to_remove = set()
-        roles_to_add = set()
-        for r in no.roles:
-            m = re_rolename.match(r)
-            if m.group("model") == "grouprole":
-                roles_to_remove.add(r)
-                for grr in self._groups[r].roles:
-                    roles_to_add.add(grr)
-        for rtr in roles_to_remove:
-            no.roles.remove(rtr)
-        for rta in roles_to_add:
-            no.roles.append(rta)
+    def _render_nodes(self):
+        for nn, no in self._nodes.items():
+            self._render_node(nn, no)
+
+    def _render_node(self, nn, no):
+        rn = RenderedNode(no, self)
+        self._rendered_nodes[nn] = rn
 
     def render(self):
-        # Iterate through all contexts
-        contexts = {}
-        # Extract the roles from all nodes and copy from the original models
-        for nn, no in self._nodes.items():
-            for r in no.roles:
-                m = re_rolename.match(r)
-                if m.group("model") != "grouprole":
-                    if not self._roles.has_key(r):
-                        self._render_role(r)
-        for c in self._connections:
-            self._render_connection(c)
-        for _, no in self._nodes.items():
-            self._render_grouproles_on_node(no)
+        self._render_roles()
+        self._render_connections()
+        self._render_nodes()
 
     def role(self, rolename):
         if self._roles.has_key(rolename):
             return self._roles[rolename]
         return None
 
-    def add_listener_hint(self, ip, port, protocol):
-        if not self._nodes.has_key(ip): return None
-        self._nodes[ip].add_listener_hint(port, protocol)
-
     def find_flow(self, localip, localport, foreignip, foreignport, protocol):
-        "find_flow identifies an egress and ingress relationship based on actual network communication"
-        if not self._nodes.has_key(localip): return None
-        lno = self._nodes[localip]
-        if not self._nodes.has_key(foreignip): return None
-        fno = self._nodes[foreignip]
-        if lno is None or fno is None: return None
+        "find_flow identifies the egress and ingress relationship based on actual network communication"
+        ret = []
+        if type(localip) == type(str): localip = ipaddress.ip_network(localip)
+        if type(foreignip) == type(str): foreignip = foreignip.ip_network(foreignip)
+        lrn = self.rendered_node(localip)
+        frn = self.rendered_node(foreignip)
+        if lrn is None or frn is None: return None
         # first step is to identify the listener
-        ingress = None
-        if [localport,protocol] in lno._listener_hints:
+        if lrn.has_listener(localport,protocol):
             # if listening, then it's an ingress
-            ingress = None
-            for r in lno.roles:
-                i = self._roles[r].find_ingress_by_port(localport, protocol)
-                if i is not None:
-                    ingress = i
-                    break
-            if ingress is None: return None
-            for r in fno.roles:
-                if self._roles[r].has_egress(ingress):
-                    return [r, ingress]
+            possible_ingresses = lrn.find_ingress_by_port(localport,protocol)
+            for pi in possible_ingresses:
+                for er in frn.roles_with_egress(pi[0],pi[1]):
+                    if [er, pi] not in ret: ret.append([er,pi])
         else:
-            ingress = None
-            for r in fno.roles:
-                i = self._roles[r].find_ingress_by_port(foreignport, protocol)
-                if i is not None:
-                    ingress = i
-                    break
-            if ingress is None: return None
-            for r in lno.roles:
-                if self._roles[r].has_egress(ingress):
-                    return [r, ingress]
-        return None
+            possible_ingresses = frn.find_ingress_by_port(foreignport,protocol)
+            for pi in possible_ingresses:
+                for er in lrn.roles_with_egress(pi[0],pi[1]):
+                    if [er,pi] not in ret: ret.append([er,pi])
+        return ret

@@ -21,7 +21,6 @@ class Node(object):
         self._roles = []
         for r in raw["roles"]:
             if r not in self._roles: self._roles.append(r)
-        self._listener_hints = []
 
     def __init__(self, raw):
         try:
@@ -34,14 +33,14 @@ class Node(object):
 
     @property
     def name(self):
+        "String representing this node's name"
         return self._name
 
     @property
     def roles(self):
+        "Array of string based role names"
         return self._roles
 
     def has_role(self, rolename):
+        "Checks to see if the string 'rolename' argument is in the list of roles for this node"
         return rolename in self._roles
-
-    def add_listener_hint(self, port, protocol):
-        self._listener_hints.append([port,protocol])
