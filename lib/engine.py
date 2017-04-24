@@ -211,7 +211,7 @@ class Engine(object):
         if type(foreignip) == type(str): foreignip = foreignip.ip_network(foreignip)
         lrn = self.rendered_node(localip)
         frn = self.rendered_node(foreignip)
-        if lrn is None or frn is None: return None
+        if lrn is None or frn is None: return []
         # first step is to identify the listener
         if lrn.has_listener(localport,protocol):
             # if listening, then it's an ingress
